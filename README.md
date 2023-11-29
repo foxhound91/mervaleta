@@ -1,6 +1,7 @@
 # Mervaleta Index
 
 ## Sample output
+* Recommendation is based on current price + volatility vs index target
 ```
 2023-11-20 Index Price: 15.58, Variation: -
 2023-11-21 Index Price: 15.43, Variation: -1.01%
