@@ -1,7 +1,38 @@
 # Mervaleta Index
 
+## Sample output
+```
+2023-11-20 Index Price: 15.58, Variation: -
+2023-11-21 Index Price: 15.43, Variation: -1.01%
+2023-11-22 Index Price: 15.14, Variation: -1.85%
+2023-11-24 Index Price: 16.46, Variation: 8.74%
+2023-11-27 Index Price: 17.28, Variation: 4.98%
+2023-11-28 Index Price: 16.87, Variation: -2.38%
+2023-11-29 Index Price: 17.02, Variation: 0.87%
+
+Volatility of the Index: 4.41%
+
+Composite Index Target: 16.11
+Recommendation: SELL
+
+Top 5 Best Performers:
+SUPV    30.71%
+TEO     25.29%
+IRS     22.78%
+BMA     16.94%
+GGAL    15.93%
+
+Top 5 Worst Performers:
+CRESY    -7.42%
+LOMA     -6.03%
+AGRO     -0.74%
+BIOX     -0.08%
+ARCO      0.53%
+```
+
 ## Index Composition
-The Mervaleta Index comprises a diverse set of companies across various industries. Below is the composition of the index
+The Mervaleta Index comprises a set of companies that are headquartered or listed in Argentina and carry out the majority of their operations in Argentina. The weight of each company in the index is, on average, 1.38 times its normalized market capitalization percentage, this is to give slightly more weight to certain companies/sectors.
+Day 0 coincides with the market closing immediately following the presidential elections. This will be updated once the CEPO is removed.
 
 | Name                            | Ticker | % of Net Assets |
 |---------------------------------|--------|-----------------|
