@@ -1,5 +1,15 @@
+import sys
 import yfinance as yf
 import pandas as pd
+
+
+class MissingTargetPriceException(Exception):
+    """Exception raised when a target price is missing for a ticker."""
+
+    def __init__(self, ticker, message="Target price is missing"):
+        self.ticker = ticker
+        self.message = message + f" for ticker: {ticker}"
+        super().__init__(self.message)
 
 
 def elaborate_target():
@@ -12,7 +22,7 @@ def elaborate_target():
             weighted_target = target * weights_df[ticker]
             weighted_targets.append(weighted_target)
         else:
-            print(f"WARN - Target not found for ticker={ticker}")
+            raise MissingTargetPriceException(ticker)
 
     # Calculate the index target
     _index_target = sum(weighted_targets)
@@ -86,8 +96,11 @@ daily_pct_change = index_values_last_days.pct_change()
 volatility = percent_variation.std()
 print(f"\nVolatility of the Index: {volatility:.2f}%")
 
-
-index_target = elaborate_target()
+try:
+    index_target = elaborate_target()
+except MissingTargetPriceException as e:
+    print(f"\nERROR - {e}")
+    sys.exit(1)
 
 recommendation()
 
