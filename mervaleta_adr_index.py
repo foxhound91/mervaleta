@@ -60,7 +60,7 @@ def check_top_tickers():
 
     # Print the top 5 best performers without "dtype: object"
     print("\nTop 5 Best Performers:")
-    print('\n'.join(sorted_pct_change[-5:].apply(lambda x: f"{x:.2f}%").to_string(index=True).split('\n')))
+    print('\n'.join(sorted_pct_change[-5:][::-1].apply(lambda x: f"{x:.2f}%").to_string(index=True).split('\n')))
 
     print("\nTop 5 Worst Performers:")
     print('\n'.join(sorted_pct_change[:5].apply(lambda x: f"{x:.2f}%").to_string(index=True).split('\n')))
