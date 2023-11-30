@@ -13,6 +13,13 @@ class MissingTargetPriceException(Exception):
 
 
 def elaborate_target():
+    """
+    Calculates and returns the composite target value of the index based on weighted analyst targets.
+    Raises:
+        MissingTargetPriceException: If the target price for any ticker is not found.
+    Returns:
+        float: The calculated composite index target value.
+    """
     # Fetch analyst price targets and apply weights
     weighted_targets = []
     for ticker in tickers:
@@ -31,6 +38,9 @@ def elaborate_target():
 
 
 def recommendation():
+    """
+    Prints a recommendation (BUY, SELL, HOLD) based on the index's current price, target, and volatility.
+    """
     # Get the latest index price
     latest_index_price = index_values_last_days.iloc[-1]
 
@@ -42,14 +52,17 @@ def recommendation():
 
     # Compare the index_target with the latest index price and print the recommendation
     if index_target > latest_index_price + volatility_threshold:
-        print("Recommendation: \033[92mBUY" + reset_code)  # Outside upper threshold
+        print("Recommendation: \033[92mBUY" + reset_code)
     elif index_target < latest_index_price - volatility_threshold:
-        print("Recommendation: \033[91mSELL" + reset_code)  # Outside lower threshold
+        print("Recommendation: \033[91mSELL" + reset_code)
     else:
-        print("Recommendation: \033[93mHOLD" + reset_code)  # Within the threshold range
+        print("Recommendation: \033[93mHOLD" + reset_code)
 
 
 def check_top_tickers():
+    """
+    Determines and prints the top 5 best and worst performing stocks in the index.
+    """
     # Calculate the total percentage change for each ticker
     start_prices = df.loc[df.first_valid_index()]
     latest_prices = df.iloc[-1]
@@ -58,7 +71,7 @@ def check_top_tickers():
     # Sort the percentage changes to find top and bottom performers
     sorted_pct_change = total_pct_change.sort_values()
 
-    # Print the top 5 best performers without "dtype: object"
+    # Print the top 5 best performers
     print("\nTop 5 Best Performers:")
     print('\n'.join(sorted_pct_change[-5:][::-1].apply(lambda x: f"{x:.2f}%").to_string(index=True).split('\n')))
 
@@ -79,7 +92,6 @@ df = yf.download(tickers, start='2023-11-20', auto_adjust=True, progress=False)[
 # Determined by a weighted sum of the closing prices of the constituent stocks.
 # Each stock's closing price is multiplied by its assigned weight
 # and these products are then summed up to get the total index value.
-# This method ensures that each stock contributes to the index in proportion to its importance
 index_values_last_days = df.apply(lambda x: (x * weights_df).sum(), axis=1)
 
 # Calculate the percentage variation compared to the previous day
