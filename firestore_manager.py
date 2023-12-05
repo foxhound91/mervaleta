@@ -10,9 +10,9 @@ def insert_into_firestore(date, index_price, variation, index_target, recommenda
 
     doc_ref = db.collection('index_data').document(date_str)
     doc_ref.set({
-        'IndexPrice': index_price,
-        'Variation': variation,
-        'IndexTarget': index_target,
+        'IndexPrice': round(index_price, 3),
+        'Variation': round(variation, 3),
+        'IndexTarget': round(index_target, 3),
         'Recommendation': recommendation
     })
 
