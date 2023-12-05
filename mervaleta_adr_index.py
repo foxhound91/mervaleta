@@ -1,7 +1,14 @@
-import os
-import sys
+from datetime import datetime
+
+import functions_framework
 import yfinance as yf
 import pandas as pd
+from google.cloud import storage
+
+TICKERS = ["YPF", "GGAL", "PAM", "BMA", "ARCO", "TGS", "AGRO", "CEPU", "TEO",
+           "CAAP", "BBAR", "LOMA", "EDN", "BIOX", "CRESY", "IRS", "SUPV"]
+WEIGHTS = [13.63, 10.09, 9.67, 8.84, 7.95, 7.38, 7.26, 6.84, 6.37,
+           4.05, 3.39, 2.88, 2.8, 2.59, 2.47, 2.19, 1.61]
 
 
 class MissingTargetPriceException(Exception):
@@ -13,20 +20,26 @@ class MissingTargetPriceException(Exception):
         super().__init__(self.message)
 
 
-def export_last_data():
+def write_to_gcs(bucket_name, file_name, data):
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(file_name)
+    blob.upload_from_string(data)
+
+
+def export_last_data(index_values_last_days, percent_variation, index_target, volatility):
     """
     Export today's data into file for record keeping
     """
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    relative_path = 'index_record.csv'
-    csv_file_path = os.path.join(script_dir, relative_path)
+    bucket_name = 'mervaleta_historical'
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    file_name = f'output_{current_date})index_record.csv'
     last_date = index_values_last_days.index[-1]
     last_index_value = index_values_last_days.iloc[-1]
     last_variation = percent_variation.iloc[-1]
     rec = recommendation(last_index_value, index_target, volatility)
-    new_line = f"{last_date.date()},{last_index_value:.2f},{last_variation:.2f}%,{index_target:.2f},{rec}\n"
-    with open(csv_file_path, 'a') as file:
-        file.write(new_line)
+    csv_data = f"{last_date.date()},{last_index_value:.2f},{last_variation:.2f}%,{index_target:.2f},{rec}\n"
+    write_to_gcs(bucket_name, file_name, csv_data)
 
 
 def elaborate_target(selected_tickers, tickers_weights):
@@ -89,41 +102,39 @@ def check_top_tickers(downloaded_tickers):
     print('\n'.join(sorted_pct_change[:5].apply(lambda x: f"{x:.2f}%").to_string(index=True).split('\n')))
 
 
-tickers = ["YPF", "GGAL", "PAM", "BMA", "ARCO", "TGS", "AGRO", "CEPU", "TEO",
-           "CAAP", "BBAR", "LOMA", "EDN", "BIOX", "CRESY", "IRS", "SUPV"]
-weights = [13.63, 10.09, 9.67, 8.84, 7.95, 7.38, 7.26, 6.84, 6.37,
-           4.05, 3.39, 2.88, 2.8, 2.59, 2.47, 2.19, 1.61]
-weights_df = pd.Series(weights, index=tickers) / 100
+@functions_framework.http
+def mervaleta_index(request):
+    weights_df = pd.Series(WEIGHTS, index=TICKERS) / 100
 
-# Downloading the closing prices
-df = yf.download(tickers, start='2023-11-20', auto_adjust=True, progress=False)['Close']
+    # Downloading the closing prices
+    df = yf.download(TICKERS, start='2023-11-20', auto_adjust=True, progress=False)['Close']
 
-# Calculate the index value for the last X days
-# Determined by a weighted sum of the closing prices of the constituent stocks.
-# Each stock's closing price is multiplied by its assigned weight
-# and these products are then summed up to get the total index value.
-index_values_last_days = df.apply(lambda x: (x * weights_df).sum(), axis=1)
+    # Calculate the index value for the last X days
+    # Determined by a weighted sum of the closing prices of the constituent stocks.
+    # Each stock's closing price is multiplied by its assigned weight
+    # and these products are then summed up to get the total index value.
+    index_values_last_days = df.apply(lambda x: (x * weights_df).sum(), axis=1)
 
-# Calculate the percentage variation compared to the previous day
-percent_variation = index_values_last_days.pct_change() * 100
+    # Calculate the percentage variation compared to the previous day
+    percent_variation = index_values_last_days.pct_change() * 100
 
-# Printing the index price and the percentage variation on the same line
-for date, (index_value, variation) in zip(index_values_last_days.index, zip(index_values_last_days, percent_variation)):
-    print(f"{date.date()} Index Price: {index_value:.2f}, Variation: {variation:.2f}%")
+    # Printing the index price and the percentage variation on the same line
+    for date, (index_value, variation) in zip(index_values_last_days.index,
+                                              zip(index_values_last_days, percent_variation)):
+        print(f"{date.date()} Index Price: {index_value:.2f}, Variation: {variation:.2f}%")
 
+    # Calculate the standard deviation (volatility)
+    volatility = percent_variation.std()
+    print(f"\nVolatility of the Index: {volatility:.2f}%")
 
-# Calculate the standard deviation (volatility)
-volatility = percent_variation.std()
-print(f"\nVolatility of the Index: {volatility:.2f}%")
+    try:
+        index_target = elaborate_target(TICKERS, weights_df)
+    except MissingTargetPriceException as e:
+        return f'ERROR - {e}'
 
-try:
-    index_target = elaborate_target(tickers, weights_df)
-except MissingTargetPriceException as e:
-    print(f"\nERROR - {e}")
-    sys.exit(1)
+    print("Recommendation: " + recommendation(index_values_last_days.iloc[-1], index_target, volatility))
 
-print("Recommendation: " + recommendation(index_values_last_days.iloc[-1], index_target, volatility))
+    check_top_tickers(df)
 
-check_top_tickers(df)
-
-export_last_data()
+    export_last_data(index_values_last_days, percent_variation, index_target, volatility)
+    return 'finished successfully'
