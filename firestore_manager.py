@@ -15,3 +15,7 @@ def insert_into_firestore(date, index_price, variation, index_target, recommenda
         'IndexTarget': index_target,
         'Recommendation': recommendation
     })
+
+
+def read_firestore_data():
+    return db.collection('index_data').stream()
