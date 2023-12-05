@@ -1,3 +1,4 @@
+import os
 import sys
 import yfinance as yf
 import pandas as pd
@@ -12,7 +13,23 @@ class MissingTargetPriceException(Exception):
         super().__init__(self.message)
 
 
-def elaborate_target():
+def export_last_data():
+    """
+    Export today's data into file for record keeping
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    relative_path = 'index_record.csv'
+    csv_file_path = os.path.join(script_dir, relative_path)
+    last_date = index_values_last_days.index[-1]
+    last_index_value = index_values_last_days.iloc[-1]
+    last_variation = percent_variation.iloc[-1]
+    rec = recommendation(last_index_value, index_target, volatility)
+    new_line = f"{last_date.date()},{last_index_value:.2f},{last_variation:.2f}%,{index_target:.2f},{rec}\n"
+    with open(csv_file_path, 'a') as file:
+        file.write(new_line)
+
+
+def elaborate_target(selected_tickers, tickers_weights):
     """
     Calculates and returns the composite target value of the index based on weighted analyst targets.
     Raises:
@@ -22,11 +39,11 @@ def elaborate_target():
     """
     # Fetch analyst price targets and apply weights
     weighted_targets = []
-    for ticker in tickers:
+    for ticker in selected_tickers:
         stock = yf.Ticker(ticker)
         target = stock.info.get('targetMeanPrice')
         if target:
-            weighted_target = target * weights_df[ticker]
+            weighted_target = target * tickers_weights[ticker]
             weighted_targets.append(weighted_target)
         else:
             raise MissingTargetPriceException(ticker)
@@ -37,41 +54,34 @@ def elaborate_target():
     return _index_target
 
 
-def recommendation():
+def recommendation(index_price, index_target, volatility):
     """
     Prints a recommendation (BUY, SELL, HOLD) based on the index's current price, target, and volatility.
     """
-    # Get the latest index price
-    latest_index_price = index_values_last_days.iloc[-1]
-
-    # ANSI reset code
-    reset_code = "\033[0m"
-
     # Define the volatility threshold using the existing volatility percentage
-    volatility_threshold = latest_index_price * volatility / 100
+    volatility_threshold = index_price * volatility / 100
 
-    # Compare the index_target with the latest index price and print the recommendation
-    if index_target > latest_index_price + volatility_threshold:
-        print("Recommendation: \033[92mBUY" + reset_code)
-    elif index_target < latest_index_price - volatility_threshold:
-        print("Recommendation: \033[91mSELL" + reset_code)
+    # Compare the index_target with the index price and print the recommendation
+    if index_target > index_price + volatility_threshold:
+        return "BUY"
+    elif index_target < index_price - volatility_threshold:
+        return "SELL"
     else:
-        print("Recommendation: \033[93mHOLD" + reset_code)
+        return "HOLD"
 
 
-def check_top_tickers():
+def check_top_tickers(downloaded_tickers):
     """
     Determines and prints the top 5 best and worst performing stocks in the index.
     """
     # Calculate the total percentage change for each ticker
-    start_prices = df.loc[df.first_valid_index()]
-    latest_prices = df.iloc[-1]
+    start_prices = downloaded_tickers.loc[downloaded_tickers.first_valid_index()]
+    latest_prices = downloaded_tickers.iloc[-1]
     total_pct_change = (latest_prices - start_prices) / start_prices * 100
 
     # Sort the percentage changes to find top and bottom performers
     sorted_pct_change = total_pct_change.sort_values()
 
-    # Print the top 5 best performers
     print("\nTop 5 Best Performers:")
     print('\n'.join(sorted_pct_change[-5:][::-1].apply(lambda x: f"{x:.2f}%").to_string(index=True).split('\n')))
 
@@ -101,19 +111,19 @@ percent_variation = index_values_last_days.pct_change() * 100
 for date, (index_value, variation) in zip(index_values_last_days.index, zip(index_values_last_days, percent_variation)):
     print(f"{date.date()} Index Price: {index_value:.2f}, Variation: {variation:.2f}%")
 
-# Calculate daily percentage changes of the index
-daily_pct_change = index_values_last_days.pct_change()
 
 # Calculate the standard deviation (volatility)
 volatility = percent_variation.std()
 print(f"\nVolatility of the Index: {volatility:.2f}%")
 
 try:
-    index_target = elaborate_target()
+    index_target = elaborate_target(tickers, weights_df)
 except MissingTargetPriceException as e:
     print(f"\nERROR - {e}")
     sys.exit(1)
 
-recommendation()
+print("Recommendation: " + recommendation(index_values_last_days.iloc[-1], index_target, volatility))
 
-check_top_tickers()
+check_top_tickers(df)
+
+export_last_data()
