@@ -1,9 +1,8 @@
-from datetime import datetime
-
 import functions_framework
-import yfinance as yf
 import pandas as pd
-from google.cloud import storage
+import yfinance as yf
+
+from firestore_manager import insert_into_firestore
 
 TICKERS = ["YPF", "GGAL", "PAM", "BMA", "ARCO", "TGS", "AGRO", "CEPU", "TEO",
            "CAAP", "BBAR", "LOMA", "EDN", "BIOX", "CRESY", "IRS", "SUPV"]
@@ -20,26 +19,15 @@ class MissingTargetPriceException(Exception):
         super().__init__(self.message)
 
 
-def write_to_gcs(bucket_name, file_name, data):
-    client = storage.Client()
-    bucket = client.bucket(bucket_name)
-    blob = bucket.blob(file_name)
-    blob.upload_from_string(data)
-
-
 def export_last_data(index_values_last_days, percent_variation, index_target, volatility):
     """
     Export today's data into file for record keeping
     """
-    bucket_name = 'mervaleta_historical'
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    file_name = f'output_{current_date})index_record.csv'
     last_date = index_values_last_days.index[-1]
     last_index_value = index_values_last_days.iloc[-1]
     last_variation = percent_variation.iloc[-1]
     rec = recommendation(last_index_value, index_target, volatility)
-    csv_data = f"{last_date.date()},{last_index_value:.2f},{last_variation:.2f}%,{index_target:.2f},{rec}\n"
-    write_to_gcs(bucket_name, file_name, csv_data)
+    insert_into_firestore(last_date, last_index_value, last_variation, index_target, rec)
 
 
 def elaborate_target(selected_tickers, tickers_weights):

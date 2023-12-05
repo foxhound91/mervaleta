@@ -1,5 +1,4 @@
 yfinance~=0.2.32
 pandas~=2.1.3
-functions-framework
-google-cloud
-google-cloud-storage
+functions-framework==3.*
+google-cloud-firestore
