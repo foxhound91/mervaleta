@@ -1,7 +1,7 @@
 from google.cloud import firestore
 
 # Create a Firestore client
-db = firestore.Client()
+db = firestore.Client(project='crypto-catfish-407213')
 
 
 def insert_into_firestore(date, index_price, variation, index_target, recommendation):
