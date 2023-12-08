@@ -4,10 +4,13 @@ I want to simulate one trade per day based on the script's recommendation
 So that I can evaluate the index
 """
 import pandas as pd
+import requests
 
 
-def read_data(file_path):
-    return pd.read_csv(file_path)
+def fetch_data(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    return pd.DataFrame(response.json())
 
 
 def simulate_trades(data, initial_investment):
@@ -39,14 +42,14 @@ def simulate_trades(data, initial_investment):
 
 
 def main():
-    file_path = 'index_record.csv'
-    data = read_data(file_path)
+    url = 'https://europe-west2-crypto-catfish-407213.cloudfunctions.net/mervaleta-data-service'
+    data = fetch_data(url)
     final_investment_value = simulate_trades(data, 100)
     print(f"Final Investment Value: ${final_investment_value:.2f}")
 
     days = len(data)  # Assuming each row in the data represents one day
-    AER = ((final_investment_value / 200) ** (365 / days)) - 1
-    print(f"Annual Equivalent Rate (AER): {AER * 100:.2f}%")
+    aer = ((final_investment_value / 100) ** (365 / days)) - 1
+    print(f"Annual Equivalent Rate (AER): {aer * 100:.2f}%")
 
 
 if __name__ == "__main__":
