@@ -31,6 +31,21 @@ BIOX     -0.08%
 ARCO      0.53%
 ```
 
+## Simulate Trades
+```
+INFO - 2023-12-04 bought 5.98 shares at 16.72
+INFO - 2023-12-05 sold   5.98 shares at 17.23
+INFO - 2024-01-09 bought 6.26 shares at 16.45
+INFO - 2024-01-10 bought 6.18 shares at 16.67
+INFO - 2024-01-11 bought 6.20 shares at 16.63
+INFO - 2024-01-12 bought 6.14 shares at 16.77
+INFO - 2024-01-16 bought 6.26 shares at 16.47
+INFO - 2024-01-17 bought 6.15 shares at 16.76
+INFO - 2024-01-22 sold  37.18 shares at 17.66
+Final Investment Value: $656.63
+Annual Equivalent Rate (AER): 1267394612.78
+```
+
 ## Index Composition
 The Mervaleta Index comprises a set of companies that are headquartered or listed in Argentina and carry out the majority of their operations in Argentina. The weight of each company in the index is, on average, 1.38 times its normalized market capitalization percentage, this is to give slightly more weight to certain companies/sectors.
 Day 0 coincides with the market closing immediately following the presidential elections. This will be updated once the CEPO is removed.
